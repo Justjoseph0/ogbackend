@@ -1,0 +1,7 @@
+Django==5.0.8
+djangorestframework==3.15.2
+django-cors-headers==4.4.0
+python-dotenv==1.0.1
+requests>=2.32.5,<3
+eth-account>=0.13.7,<0.14
+0g-storage-sdk==0.3.0
