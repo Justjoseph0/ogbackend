@@ -36,9 +36,39 @@ def store(request):
     ai_meta = payload.pop("ai", None)
     if ai_meta:
         payload["report"] = {**payload["report"], "_ai": ai_meta}
-    storage_result = upload_report_to_0g(payload)
+    storage_payload = _compact_storage_payload(payload)
+    try:
+        storage_result = upload_report_to_0g(storage_payload)
+    except Exception as exc:
+        return Response(
+            {
+                "detail": "0G storage upload failed",
+                "error": str(exc),
+            },
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
     stored = StoredReport.objects.create(**payload, **storage_result)
     return Response(StoredReportSerializer(stored).data, status=status.HTTP_201_CREATED)
+
+
+def _compact_storage_payload(payload):
+    raw_data = payload.get("raw_data", {})
+    compact_raw = {
+        key: value
+        for key, value in raw_data.items()
+        if key
+        not in {
+            "recent_transactions",
+        }
+    }
+    if raw_data.get("recent_transactions"):
+        compact_raw["recent_transactions"] = raw_data["recent_transactions"][:3]
+    return {
+        "query": payload.get("query"),
+        "input_type": payload.get("input_type"),
+        "report": payload.get("report"),
+        "raw_data": compact_raw,
+    }
 
 
 @api_view(["GET"])

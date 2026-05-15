@@ -25,7 +25,7 @@ def upload_report_to_0g(payload: dict[str, Any]) -> dict[str, str]:
     account = Account.from_key(private_key)
 
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as tmp:
-        json.dump(payload, tmp, indent=2)
+        json.dump(payload, tmp, separators=(",", ":"))
         tmp_path = tmp.name
 
     zg_file = None
@@ -45,15 +45,15 @@ def upload_report_to_0g(payload: dict[str, Any]) -> dict[str, str]:
                 "account": account,
             },
         )
-        if err is not None:
-            raise RuntimeError(str(err))
         tx_hash = result.get("txHash", "")
         root_hash = result.get("rootHash", "")
+        if err is not None and not (tx_hash and root_hash):
+            raise RuntimeError(str(err))
         return {
             "root_hash": root_hash,
             "tx_hash": tx_hash,
             "explorer_url": explorer_tpl.format(tx_hash=tx_hash),
-            "storage_status": "stored-on-0g",
+            "storage_status": "stored-on-0g" if err is None else "stored-on-0g-pending",
         }
     finally:
         if zg_file is not None:
